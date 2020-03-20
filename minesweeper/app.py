@@ -83,7 +83,15 @@ class App:
                 for cell in self.__cells:
                     cell = cell.update()
                     if cell == 'X':
-                        self.__screen = 'end'
+                        self.__screen = 'lose'
+                        break
+                    elif cell != None:
+                        nb_discovered_cells = sum(0 if c == '' or c == 'F' else 1 for c in self.__board.visible_cells)
+                        nb_cells_to_discover = self.__board.nb_cells() - self.__board.nb_mines
+                        print(nb_discovered_cells)
+                        print(nb_cells_to_discover)
+                        if nb_discovered_cells == nb_cells_to_discover:
+                            self.__screen = 'win'
                         break
         else:
             if pyxel.btnp(pyxel.MOUSE_LEFT_BUTTON):
@@ -98,6 +106,10 @@ class App:
                 button.draw()
         elif self.__screen == 'game':
             self.__draw_cells()
+        elif self.__screen == 'win':
+            self.__draw_cells()
+            pyxel.text(65, 35, 'You win', pyxel.frame_count % 16)
+            self.__restart_button.draw()
         else:
             self.__draw_cells()
             pyxel.text(58, 35, 'Bouh loser', pyxel.frame_count % 16)
