@@ -48,7 +48,7 @@ class Cell:
             return self.action()
 
     def draw(self, label):
-        pyxel.rect(self.x, self.y, CELL_SIZE, CELL_SIZE, 2)
+        pyxel.rect(self.x, self.y, CELL_SIZE, CELL_SIZE, 3)
         pyxel.rectb(self.x, self.y, CELL_SIZE, CELL_SIZE, 0)
         pyxel.text(self.x + 2, self.y + 1, label, 0)
 
@@ -64,6 +64,7 @@ class App:
             Button('Medium', BUTTON_X, BUTTON_Y + BUTTON_HEIGHT + BUTTON_Y_MARGIN, lambda: Board(14, 18, 40)),
             Button('Hard', BUTTON_X, BUTTON_Y + 2 * (BUTTON_HEIGHT + BUTTON_Y_MARGIN), lambda: Board(20, 24, 99))
         ]
+        self.__restart_button = Button('Restart', BUTTON_X, BUTTON_Y, lambda: True)
 
         pyxel.run(self.__update, self.__draw)
 
@@ -84,6 +85,10 @@ class App:
                     if cell == 'X':
                         self.__screen = 'end'
                         break
+        else:
+            if pyxel.btnp(pyxel.MOUSE_LEFT_BUTTON):
+                if self.__restart_button.update():
+                    self.__screen = 'home'
 
     def __draw(self):
         pyxel.cls(1)
@@ -92,11 +97,11 @@ class App:
             for button in self.__home_buttons:
                 button.draw()
         elif self.__screen == 'game':
-            for index in range(len(self.__cells)):
-                label = self.__board.visible_cells[index]
-                self.__cells[index].draw(label)
+            self.__draw_cells()
         else:
+            self.__draw_cells()
             pyxel.text(58, 35, 'Bouh loser', pyxel.frame_count % 16)
+            self.__restart_button.draw()
 
     def __create_cells(self):
         self.__cells = list(self.__create_cell(index) for index in range(len(self.__board.visible_cells)))
@@ -109,3 +114,8 @@ class App:
         x = column * CELL_SIZE + offset_x
         y = row * CELL_SIZE + offset_y
         return Cell(x, y, lambda: self.__board.dig(row, column))
+
+    def __draw_cells(self):
+        for index in range(len(self.__cells)):
+            label = self.__board.visible_cells[index]
+            self.__cells[index].draw(label)
