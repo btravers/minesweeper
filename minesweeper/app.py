@@ -16,41 +16,56 @@ BUTTON_LABEL_Y = 3
 
 CELL_SIZE = 7
 
-class Button:
-    def __init__(self, label, x, y, action):
-        self.label = label
+class Clickable:
+    def __init__(self, x, y, width, height):
         self.x = x
         self.y = y
-        self.action = action
+        self.__width = width
+        self.__height = height
+
+    def is_clicked(self):
+        return self.x <= pyxel.mouse_x and self.x + self.__width >= pyxel.mouse_x and self.y <= pyxel.mouse_y and self.y + self.__height >= pyxel.mouse_y
+
+class Button(Clickable):
+    def __init__(self, label, x, y, action):
+        self.__label = label
+        self.__action = action
+
+        Clickable.__init__(self, x, y, BUTTON_WIDTH, BUTTON_HEIGHT)
 
     def update(self):
-        x = pyxel.mouse_x
-        y = pyxel.mouse_y
-        is_clicked = self.x <= x and self.x + BUTTON_WIDTH >= x and self.y <= y and self.y + BUTTON_HEIGHT >= y
-        if is_clicked:
-            return self.action()
+        if self.is_clicked():
+            return self.__action()
 
     def draw(self):
         pyxel.rect(self.x, self.y, BUTTON_WIDTH, BUTTON_HEIGHT, 2)
-        pyxel.text(self.x + (BUTTON_WIDTH - len(self.label) * 4) // 2, self.y + BUTTON_LABEL_Y, self.label, 0)
+        pyxel.text(self.x + (BUTTON_WIDTH - len(self.__label) * 4) // 2, self.y + BUTTON_LABEL_Y, self.__label, 0)
 
-class Cell:
-    def __init__(self, x, y, action):
-        self.x = x
-        self.y = y
-        self.action = action
+class Cell(Clickable):
+    def __init__(self, x, y, left_click, right_click):
+        self.__left_click = left_click
+        self.__right_click = right_click
 
-    def update(self):
-        x = pyxel.mouse_x
-        y = pyxel.mouse_y
-        is_clicked = self.x <= x and self.x + CELL_SIZE >= x and self.y <= y and self.y + CELL_SIZE >= y
-        if is_clicked:
-            return self.action()
+        Clickable.__init__(self, x, y, CELL_SIZE, CELL_SIZE)
+
+    def left_click(self):
+        if self.is_clicked():
+            return self.__left_click()
+
+    def right_click(self):
+        if self.is_clicked():
+            return self.__right_click()
 
     def draw(self, label):
         pyxel.rect(self.x, self.y, CELL_SIZE, CELL_SIZE, 3)
         pyxel.rectb(self.x, self.y, CELL_SIZE, CELL_SIZE, 0)
-        pyxel.text(self.x + 2, self.y + 1, label, 0)
+        pyxel.text(self.x + 2, self.y + 1, label, self.__get_color(label))
+
+    def __get_color(self, label):
+        if label == 'F':
+            return 4
+        else:
+            return 5
 
 class App:
     def __init__(self):
@@ -81,17 +96,19 @@ class App:
         elif self.__screen == 'game':
             if pyxel.btnp(pyxel.MOUSE_LEFT_BUTTON):
                 for cell in self.__cells:
-                    cell = cell.update()
+                    cell = cell.left_click()
                     if cell == 'X':
                         self.__screen = 'lose'
                         break
                     elif cell != None:
                         nb_discovered_cells = sum(0 if c == '' or c == 'F' else 1 for c in self.__board.visible_cells)
                         nb_cells_to_discover = self.__board.nb_cells() - self.__board.nb_mines
-                        print(nb_discovered_cells)
-                        print(nb_cells_to_discover)
                         if nb_discovered_cells == nb_cells_to_discover:
                             self.__screen = 'win'
+                        break
+            if pyxel.btnp(pyxel.MOUSE_RIGHT_BUTTON):
+                for cell in self.__cells:
+                    if cell.right_click() == 'F':
                         break
         else:
             if pyxel.btnp(pyxel.MOUSE_LEFT_BUTTON):
@@ -125,7 +142,7 @@ class App:
         offset_y = (HEIGHT - self.__board.nb_rows * CELL_SIZE) // 2
         x = column * CELL_SIZE + offset_x
         y = row * CELL_SIZE + offset_y
-        return Cell(x, y, lambda: self.__board.dig(row, column))
+        return Cell(x, y, lambda: self.__board.dig(row, column), lambda: self.__board.flag(row, column))
 
     def __draw_cells(self):
         for index in range(len(self.__cells)):
