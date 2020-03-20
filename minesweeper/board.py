@@ -9,14 +9,12 @@ class Board:
         self.__cells = self.__generate_board()
         
     def dig(self, row, column):
-        print('dig ' + str(row) + ' ' + str(column))
         index = self.__get_index(row, column)
         cell = self.__cells[index]
         self.visible_cells[index] = cell
         return cell
 
     def flag(self, row, column):
-        print('flag ' + str(row) + ' ' + str(column))
         index = self.__get_index(row, column)
         cell = 'F'
         self.visible_cells[index] = cell
