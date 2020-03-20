@@ -16,6 +16,7 @@ BUTTON_LABEL_Y = 3
 
 CELL_SIZE = 7
 
+
 class Clickable:
     def __init__(self, x, y, width, height):
         self.x = x
@@ -25,6 +26,7 @@ class Clickable:
 
     def is_clicked(self):
         return self.x <= pyxel.mouse_x and self.x + self.__width >= pyxel.mouse_x and self.y <= pyxel.mouse_y and self.y + self.__height >= pyxel.mouse_y
+
 
 class Button(Clickable):
     def __init__(self, label, x, y, action):
@@ -39,7 +41,9 @@ class Button(Clickable):
 
     def draw(self):
         pyxel.rect(self.x, self.y, BUTTON_WIDTH, BUTTON_HEIGHT, 2)
-        pyxel.text(self.x + (BUTTON_WIDTH - len(self.__label) * 4) // 2, self.y + BUTTON_LABEL_Y, self.__label, 0)
+        pyxel.text(self.x + (BUTTON_WIDTH - len(self.__label) * 4) //
+                   2, self.y + BUTTON_LABEL_Y, self.__label, 0)
+
 
 class Cell(Clickable):
     def __init__(self, x, y, left_click, right_click):
@@ -67,6 +71,7 @@ class Cell(Clickable):
         else:
             return 5
 
+
 class App:
     def __init__(self):
         pyxel.init(WIDTH, HEIGHT, caption="Minesweeper")
@@ -76,10 +81,13 @@ class App:
 
         self.__home_buttons = [
             Button('Easy', BUTTON_X, BUTTON_Y, lambda: Board(8, 10, 10)),
-            Button('Medium', BUTTON_X, BUTTON_Y + BUTTON_HEIGHT + BUTTON_Y_MARGIN, lambda: Board(14, 18, 40)),
-            Button('Hard', BUTTON_X, BUTTON_Y + 2 * (BUTTON_HEIGHT + BUTTON_Y_MARGIN), lambda: Board(20, 24, 99))
+            Button('Medium', BUTTON_X, BUTTON_Y + BUTTON_HEIGHT +
+                   BUTTON_Y_MARGIN, lambda: Board(14, 18, 40)),
+            Button('Hard', BUTTON_X, BUTTON_Y + 2 * (BUTTON_HEIGHT +
+                                                     BUTTON_Y_MARGIN), lambda: Board(20, 24, 99))
         ]
-        self.__restart_button = Button('Restart', BUTTON_X, BUTTON_Y, lambda: True)
+        self.__restart_button = Button(
+            'Restart', BUTTON_X, BUTTON_Y, lambda: True)
 
         pyxel.run(self.__update, self.__draw)
 
@@ -96,20 +104,16 @@ class App:
         elif self.__screen == 'game':
             if pyxel.btnp(pyxel.MOUSE_LEFT_BUTTON):
                 for cell in self.__cells:
-                    cell = cell.left_click()
-                    if cell == 'X':
-                        self.__screen = 'lose'
-                        break
-                    elif cell != None:
-                        nb_discovered_cells = sum(0 if c == '' or c == 'F' else 1 for c in self.__board.visible_cells)
-                        nb_cells_to_discover = self.__board.nb_cells() - self.__board.nb_mines
-                        if nb_discovered_cells == nb_cells_to_discover:
-                            self.__screen = 'win'
-                        break
+                    cell.left_click()
+
+                if self.__is_win():
+                    self.__screen = 'win'
+
+                if self.__is_lose():
+                    self.__screen = 'lose'
             if pyxel.btnp(pyxel.MOUSE_RIGHT_BUTTON):
                 for cell in self.__cells:
-                    if cell.right_click() == 'F':
-                        break
+                    cell.right_click()
         else:
             if pyxel.btnp(pyxel.MOUSE_LEFT_BUTTON):
                 if self.__restart_button.update():
@@ -117,7 +121,7 @@ class App:
 
     def __draw(self):
         pyxel.cls(1)
-        if self.__screen == 'home': 
+        if self.__screen == 'home':
             pyxel.text(58, 35, 'Minesweeper', pyxel.frame_count % 16)
             for button in self.__home_buttons:
                 button.draw()
@@ -133,7 +137,8 @@ class App:
             self.__restart_button.draw()
 
     def __create_cells(self):
-        self.__cells = list(self.__create_cell(index) for index in range(len(self.__board.visible_cells)))
+        self.__cells = list(self.__create_cell(index)
+                            for index in range(len(self.__board.visible_cells)))
 
     def __create_cell(self, index):
         column = index % self.__board.nb_columns
@@ -148,3 +153,13 @@ class App:
         for index in range(len(self.__cells)):
             label = self.__board.visible_cells[index]
             self.__cells[index].draw(label)
+
+    def __is_win(self): 
+        nb_discovered_cells = sum(0 if c == '' or c == 'F' else 1 for c in self.__board.visible_cells)
+        nb_cells_to_discover = self.__board.nb_cells() - self.__board.nb_mines
+        print(nb_discovered_cells)
+        print(nb_cells_to_discover)
+        return nb_discovered_cells == nb_cells_to_discover
+
+    def __is_lose(self):
+        return any(c == 'X' for c in self.__board.visible_cells)
